@@ -1,0 +1,19 @@
+name = "veltora"
+main = "worker.js"
+compatibility_date = "2026-10-19"
+
+[vars]
+GUILD_ID = "1559887838059962481"
+ADMIN_ROLE_ID = "1561691507382034502"
+ORDERS_CHANNEL_ID = "1561694714267308092"
+REQUESTS_CHANNEL_ID = "1561694784014262273"
+
+[assets]
+directory = "."
+binding = "ASSETS"
+run_worker_first = ["/api/*"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "velora"
+database_id = "0d71696a-6a12-4a48-bb88-45e81215a7ed"

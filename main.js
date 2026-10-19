@@ -2,7 +2,7 @@
            CLIENT_ID = ID aplikace z Discord Developer Portalu (přidej Redirect na adresu stránky),
            GUILD_ID = ID vašeho serveru, ADMIN_ROLE_ID = ID role, která dává admina. */
 /* API = adresa vašeho backendu (velora-backend.js), který posílá zprávy do Discord kanálů a soukromé zprávy hráčům. */
-var CFG = { CLIENT_ID: '1561807208897978388', GUILD_ID: '1559887838059962481', ADMIN_ROLE_ID: '1561691507382034502', API: '', REDIRECT: location.origin + location.pathname };
+var CFG = { CLIENT_ID: '1561807208897978388', GUILD_ID: '1559887838059962481', ADMIN_ROLE_ID: '1561691507382034502', API: location.origin + '/api', REDIRECT: location.origin + location.pathname };
 var TOKEN = ''; try { TOKEN = sessionStorage.getItem('vtok') || '' } catch (e) { }
 var DEMO = !CFG.CLIENT_ID;
 
@@ -36,12 +36,33 @@ function isAdmin() { return !!(state.user && state.user.admin) }
 function save() { try { localStorage.setItem('velora3', JSON.stringify({ user: state.user, orders: state.orders, collabs: state.collabs, products: PRODUCTS })) } catch (e) { } }
 function load() { try { var d = JSON.parse(localStorage.getItem('velora3') || 'null'); if (d) { state.user = d.user; state.orders = d.orders || []; state.collabs = d.collabs || []; if (Array.isArray(d.products)) PRODUCTS = d.products } } catch (e) { } }
 function productById(id) { return PRODUCTS.find(function (p) { return p.id === Number(id) }) }
+function api(path, options) {
+    if (!CFG.API) return Promise.reject(new Error('API není nastaveno'));
+    options = options || {}; options.headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
+    if (TOKEN) options.headers.Authorization = 'Bearer ' + TOKEN;
+    return fetch(CFG.API + path, options).then(function (r) { if (!r.ok) throw new Error('API ' + r.status); return r.status === 204 ? null : r.json() });
+}
+function loadProducts() {
+    api('/products').then(function (data) {
+        if (Array.isArray(data)) { PRODUCTS = data; renderHome(); renderShop(); renderCart() }
+    }).catch(function () { });
+}
+function loadAdminData() {
+    if (!isAdmin() || !CFG.API) return;
+    Promise.all([api('/orders'), api('/requests')]).then(function (data) {
+        state.orders = data[0] || []; state.collabs = data[1] || [];
+        if (document.querySelector('.view.on').id === 'dash') renderDash();
+        if (document.querySelector('.view.on').id === 'orders') renderOrders();
+        if (document.querySelector('.view.on').id === 'inbox') renderInbox();
+    }).catch(function () { toast('Admin data se nepodařilo načíst ze serveru') });
+}
 
 function go(v) {
     document.querySelectorAll('.view').forEach(function (s) { s.classList.toggle('on', s.id === v) });
     document.querySelectorAll('nav button').forEach(function (b) { b.classList.toggle('on', b.dataset.go === v) });
     var p = $('.prof'); if (p) p.classList.toggle('on', v === 'profile');
     if (v === 'dash') renderDash(); if (v === 'orders') renderOrders(); if (v === 'inbox') renderInbox(); if (v === 'profile') renderProfile();
+    if (v === 'dash' || v === 'orders' || v === 'inbox') loadAdminData();
     window.scrollTo(0, 0);
 }
 document.addEventListener('click', function (e) {
@@ -97,14 +118,15 @@ function tag(s) { var c = s === 'Nová' ? 'nova' : (s === 'Hotovo' || s === 'Př
 /* Zprávy do Discordu jdou přes backend, nikdy přímo z prohlížeče (bot token nesmí být v kódu stránky). */
 function notify(type, data) {
     if (DEMO || !CFG.API) return;
-    fetch(CFG.API + '/' + type, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + TOKEN }, body: JSON.stringify(data) }).then(function (r) { if (!r.ok) toast('Zprávu na Discord se nepodařilo odeslat') }).catch(function () { toast('Zprávu na Discord se nepodařilo odeslat') });
+    api('/' + type, { method: 'POST', body: JSON.stringify(data) }).catch(function () { toast('Data se nepodařilo uložit na server') });
 }
 function decide(i, v) {
     var c = state.collabs[i]; if (!c) return; c.status = v; save(); renderInbox(); renderDash();
+    if (!DEMO && CFG.API) api('/request-decision', { method: 'POST', body: JSON.stringify({ id: c.id, status: v }) }).catch(function () { toast('Stav žádosti se nepodařilo uložit') });
     if (c.uid) { notify('decision', { uid: c.uid, id: c.id, name: c.name, status: v }); toast('Žádost: ' + v.toLowerCase() + (DEMO ? '. Hráči by odešla soukromá zpráva (demo)' : '. Hráči se posílá soukromá zpráva')) }
     else toast('Žádost: ' + v.toLowerCase() + '. Hráč nemá Discord, zprávu poslat nelze');
 }
-function setSt(id, s) { state.orders.forEach(function (o) { if (o.id === id) o.status = s }); save(); renderOrders(); renderDash(); toast('Objednávka ' + id + ': ' + s) }
+function setSt(id, s) { state.orders.forEach(function (o) { if (o.id === id) o.status = s }); save(); renderOrders(); renderDash(); if (!DEMO && CFG.API) api('/order-status', { method: 'POST', body: JSON.stringify({ id: id, status: s }) }).catch(function () { toast('Stav objednávky se nepodařilo uložit') }); toast('Objednávka ' + id + ': ' + s) }
 function ordersTable(list, act) { return '<div class="tw"><table><thead><tr><th>Číslo</th><th>Zákazník</th><th>Položky</th><th>Cena</th><th>Stav</th>' + (act ? '<th>Změnit stav</th>' : '') + '</tr></thead><tbody>' + list.map(function (o) { return '<tr><td>' + o.id + '<br><small style="color:var(--mut)">' + o.date + '</small></td><td>' + esc(o.by || 'neznámý') + '</td><td>' + esc(o.items) + '</td><td>' + usd(o.total) + '</td><td>' + tag(o.status) + '</td>' + (act ? '<td><div class="acts"><button class="btn sm' + (o.status === 'V procesu' ? ' on' : '') + '" data-st="1" data-oid="' + o.id + '" data-s="V procesu">' + ic('hourglass') + 'V procesu</button><button class="btn sm' + (o.status === 'Hotovo' ? ' on' : '') + '" data-st="1" data-oid="' + o.id + '" data-s="Hotovo">' + ic('check') + 'Hotovo</button></div></td>' : '') + '</tr>' }).join('') + '</tbody></table></div>' }
 function renderDash() {
     if (!isAdmin()) { $('#dashBody').innerHTML = gate('Dashboard je jen pro admina'); return }
@@ -122,7 +144,9 @@ function renderDash() {
 function removeProduct(id) {
     var p = productById(id); if (!p) return;
     PRODUCTS = PRODUCTS.filter(function (item) { return item.id !== id });
-    delete state.cart[id]; save(); renderDash(); renderHome(); renderShop(); renderCart(); toast('Produkt „' + p.n + '“ byl odebrán');
+    delete state.cart[id];
+    var result = DEMO || !CFG.API ? Promise.resolve() : api('/products/' + id, { method: 'DELETE' });
+    result.then(function () { save(); renderDash(); renderHome(); renderShop(); renderCart(); toast('Produkt „' + p.n + '“ byl odebrán') }).catch(function () { PRODUCTS.push(p); toast('Produkt se nepodařilo odebrat') });
 }
 function renderOrders() {
     if (!isAdmin()) { $('#ordersBody').innerHTML = gate('Objednávky vidí jen admin'); return }
@@ -144,8 +168,9 @@ document.addEventListener('submit', function (e) {
     e.preventDefault();
     var f = new FormData(e.target), name = String(f.get('name') || '').trim(), price = Number(f.get('price'));
     if (!name || !Number.isFinite(price) || price < 0) { toast('Vyplň platný název a cenu'); return }
-    PRODUCTS.push({ id: PRODUCTS.reduce(function (max, p) { return Math.max(max, p.id) }, 0) + 1, n: name, c: String(f.get('category')), p: price });
-    save(); renderDash(); renderHome(); renderShop(); toast('Produkt byl přidán');
+    var product = { id: PRODUCTS.reduce(function (max, p) { return Math.max(max, p.id) }, 0) + 1, n: name, c: String(f.get('category')), p: price };
+    var result = DEMO || !CFG.API ? Promise.resolve(product) : api('/products', { method: 'POST', body: JSON.stringify(product) });
+    result.then(function (saved) { if (!DEMO && CFG.API && saved) product = saved; PRODUCTS.push(product); save(); renderDash(); renderHome(); renderShop(); toast('Produkt byl přidán') }).catch(function () { toast('Produkt se nepodařilo uložit na server') });
 });
 $('#collabForm').onsubmit = function (e) {
     e.preventDefault(); var f = new FormData(e.target);
@@ -189,4 +214,5 @@ if (DEMO) $('#demo').hidden = false;
 function renderTicker() { var T = ['Nejlepší dostupný obchod ve městě', 'Nejlepší ceny na trhu', 'Všechno na jednom místě', 'Čerstvé zboží každý den', 'Elektronika, občerstvení i oblečení', 'Objednej a my se ozveme']; var g = T.map(function (t) { return '<span>' + t + '</span>' }).join(''); $('#tick').innerHTML = g + g + g + g }
 renderTicker(); renderAuth(); renderHome(); renderShop(); renderCart();
 $('#q').oninput = renderShop; $('#sort').onchange = renderShop;
+loadProducts();
 if (!DEMO) handleReturn();
