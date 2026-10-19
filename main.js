@@ -29,7 +29,15 @@ var $ = function (s) { return document.querySelector(s) };
 function ic(n) { return '<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-' + n + '"/></svg>' }
 function usd(n) { return '$' + n.toLocaleString('en-US') }
 function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] }) }
-function toast(t) { var e = $('#toast'); e.textContent = t; e.classList.add('on'); setTimeout(function () { e.classList.remove('on') }, 2400) }
+var toastTimer;
+function toast(t) {
+    var e = $('#toast'), text = String(t), error = /nepodařilo|nepodařil|neplatn|přihlas|selhala|chyb/i.test(text);
+    e.className = 'toast on ' + (error ? 'error' : 'success');
+    e.innerHTML = '<span class="toast-icon">' + ic(error ? 'x' : 'check') + '</span><span class="toast-text">' + esc(text) + '</span><button class="toast-close" type="button" aria-label="Zavřít upozornění">' + ic('x') + '</button>';
+    e.querySelector('.toast-close').onclick = function () { e.classList.remove('on') };
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { e.classList.remove('on') }, 3600);
+}
 /* Bez přihlášení nebo bez admin role je každý visitor. */
 function isAdmin() { return !!(state.user && state.user.admin) }
 function save() { try { localStorage.setItem('velora3', JSON.stringify({ user: state.user, orders: state.orders, collabs: state.collabs, products: PRODUCTS })) } catch (e) { } }
@@ -208,8 +216,14 @@ function updateContactFields() {
     var complaint = $('#contactType').value === 'complaint';
     $('#cooperationFields').hidden = complaint;
     $('#complaintFields').hidden = !complaint;
-    $('#cooperationFields').querySelectorAll('input, select, textarea').forEach(function (field) { field.required = !complaint });
-    $('#complaintFields').querySelectorAll('input, textarea').forEach(function (field) { field.required = complaint && field.name !== 'orderId' });
+    $('#cooperationFields').querySelectorAll('input, select, textarea').forEach(function (field) {
+        field.required = !complaint;
+        field.disabled = complaint;
+    });
+    $('#complaintFields').querySelectorAll('input, textarea').forEach(function (field) {
+        field.required = complaint && field.name !== 'orderId';
+        field.disabled = !complaint;
+    });
 }
 $('#contactType').onchange = updateContactFields;
 $('#collabForm').onsubmit = function (e) {

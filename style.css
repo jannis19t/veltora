@@ -748,19 +748,89 @@ textarea {
 .toast {
     position: fixed;
     left: 50%;
-    bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
-    transform: translateX(-50%);
-    background: var(--tx);
-    color: #111;
-    font-weight: 500;
-    padding: 0.625rem 1rem;
-    border-radius: 0.625rem;
+    bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+    transform: translate(-50%, 1rem);
+    display: flex;
+    align-items: center;
+    gap: .7rem;
+    width: min(30rem, calc(100% - 2rem));
+    background: rgba(25, 25, 34, .96);
+    color: var(--tx);
+    border: .0625rem solid var(--line);
+    box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, .35), 0 0 .8rem rgba(255, 46, 154, .08);
+    font-weight: 600;
+    padding: .8rem .75rem;
+    border-radius: .9rem;
     z-index: 60;
-    display: none
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity .25s ease, transform .25s ease, visibility .25s ease
 }
 
 .toast.on {
-    display: block
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, 0);
+    pointer-events: auto
+}
+
+.toast.success {
+    border-color: rgba(126, 231, 135, .35)
+}
+
+.toast.error {
+    border-color: rgba(255, 104, 130, .45)
+}
+
+.toast-icon {
+    display: grid;
+    place-items: center;
+    width: 1.9rem;
+    height: 1.9rem;
+    flex: none;
+    border-radius: 50%;
+    color: #07100a;
+    background: #7ee787
+}
+
+.toast.error .toast-icon {
+    color: #1a080b;
+    background: #ff6882
+}
+
+.toast-icon .ic {
+    width: 1rem;
+    height: 1rem;
+    stroke-width: 1.8
+}
+
+.toast-text {
+    flex: 1;
+    font-size: .9rem
+}
+
+.toast-close {
+    display: grid;
+    place-items: center;
+    flex: none;
+    padding: .25rem;
+    border: 0;
+    border-radius: .45rem;
+    background: transparent;
+    color: var(--mut);
+    cursor: pointer;
+    transition: color .2s ease, background .2s ease
+}
+
+.toast-close:hover {
+    color: var(--tx);
+    background: rgba(255, 255, 255, .08)
+}
+
+.toast-close .ic {
+    width: 1rem;
+    height: 1rem
 }
 
 footer {
