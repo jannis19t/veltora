@@ -37,17 +37,22 @@ function product(row) {
   return { id: row.id, n: row.name, c: row.category, p: row.price };
 }
 
-async function notifyDiscord(env, type, data) {
+async function notifyDiscord(env, type, data, requestUrl) {
   const channelId = type === "order" ? env.ORDERS_CHANNEL_ID : env.REQUESTS_CHANNEL_ID;
   if (!env.DISCORD_BOT_TOKEN || !channelId) return;
+  const siteUrl = env.PUBLIC_URL || new URL(requestUrl).origin;
   const content = type === "order"
-    ? `Nová objednávka ${data.id} od ${data.by}: ${data.items} (${data.total})`
-    : `Nová žádost o spolupráci od ${data.name}: ${data.type}`;
-  await fetch(`https://discord.com/api/channels/${channelId}/messages`, {
+    ? `📦 **Nová objednávka ${data.id}**\nZákazník: ${data.by}\nPoložky: ${data.items}\nCelkem: ${data.total}\n\nOtevřít administraci: ${siteUrl}`
+    : `🤝 **Nová žádost o spolupráci**\nJméno: ${data.name}\nTyp: ${data.type}\nKontakt: ${data.phone}\n\nOtevřít administraci: ${siteUrl}`;
+  const response = await fetch(`https://discord.com/api/channels/${channelId}/messages`, {
     method: "POST",
     headers: { Authorization: `Bot ${env.DISCORD_BOT_TOKEN}`, "Content-Type": "application/json" },
     body: JSON.stringify({ content })
   });
+  if (!response.ok) {
+    const details = await response.text();
+    throw new Error(`Discord zpráva selhala (${response.status}): ${details}`);
+  }
 }
 
 async function notifyDecision(env, data) {
@@ -99,7 +104,7 @@ async function handleApi(request, env) {
     if (!body.id || !body.items || !Number.isFinite(body.total)) return json({ error: "Neplatná objednávka" }, 400);
     await env.DB.prepare("INSERT INTO orders (id, discord_id, customer_name, items, total) VALUES (?, ?, ?, ?, ?)")
       .bind(body.id, user.id, user.name, body.items, body.total).run();
-    await notifyDiscord(env, "order", body);
+    await notifyDiscord(env, "order", body, request.url);
     return json({ ok: true }, 201);
   }
 
@@ -145,7 +150,7 @@ async function handleApi(request, env) {
     if (!body.name || !body.type || !body.phone || !body.msg) return json({ error: "Neplatná žádost" }, 400);
     await env.DB.prepare("INSERT INTO collaboration_requests (id, discord_id, name, type, phone, message) VALUES (?, ?, ?, ?, ?, ?)")
       .bind(body.id, user ? user.id : null, body.name, body.type, body.phone, body.msg).run();
-    await notifyDiscord(env, "request", body);
+    await notifyDiscord(env, "request", body, request.url);
     return json({ ok: true }, 201);
   }
 

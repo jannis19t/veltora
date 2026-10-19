@@ -86,7 +86,7 @@ document.addEventListener('click', function (e) {
     var rp = t.closest('[data-remove-product]'); if (rp) { removeProduct(+rp.dataset.removeProduct); return }
 });
 
-function card(p) { return '<article class="card"><div class="pic">' + ic(CICON[p.c]) + '</div><b>' + esc(p.n) + '</b><small>' + esc(p.c) + '</small><div class="pr"><span><b>' + usd(p.p) + '</b></span><button class="icon-btn" data-add="' + p.id + '" aria-label="Přidat do košíku: ' + esc(p.n) + '">' + ic('plus') + '</button></div></article>' }
+function card(p) { return '<article class="card"><div class="pic">' + ic(CICON[p.c]) + '</div><b>' + esc(p.n) + '</b><div class="product-meta"><span class="meta-badge">' + esc(p.c) + '</span><span class="meta-badge price">' + usd(p.p) + '</span></div><div class="pr"><span></span><button class="icon-btn" data-add="' + p.id + '" aria-label="Přidat do košíku: ' + esc(p.n) + '">' + ic('plus') + '</button></div></article>' }
 function renderShop() {
     $('#chips').innerHTML = ['Vše'].concat(CATS).map(function (c) { return '<button class="pill' + (c === state.filter ? ' on' : '') + '" data-cat="' + c + '">' + c + '</button>' }).join('');
     var q = ($('#q').value || '').toLowerCase(), so = $('#sort').value;
@@ -138,14 +138,12 @@ function ordersTable(list, act) { return '<div class="tw"><table><thead><tr><th>
 function renderDash() {
     if (!isAdmin()) { $('#dashBody').innerHTML = gate('Dashboard je jen pro admina'); return }
     var sum = state.orders.reduce(function (s, o) { return s + o.total }, 0);
-    var days = ['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'], vals = [40, 65, 50, 85, 70, 100, 55];
     $('#dashBody').innerHTML = '<div class="stack"><h2 style="margin:0">Dashboard</h2>' +
         '<div class="stats"><div class="box stat"><b>' + state.orders.length + '</b><span>Objednávky celkem</span></div>' +
         '<div class="box stat"><b>' + usd(sum) + '</b><span>Tržby celkem</span></div>' +
         '<div class="box stat"><b>' + state.orders.filter(function (o) { return o.status !== 'Hotovo' }).length + '</b><span>Nevyřízené objednávky</span></div>' +
         '<div class="box stat"><b>' + state.collabs.length + '</b><span>Žádosti o spolupráci</span></div></div>' +
-        '<div class="box"><h3 style="margin-bottom:1rem">Aktivita za týden (ukázková data)</h3><div class="bars">' + vals.map(function (v, i) { return '<div style="height:' + v + '%"><i>' + days[i] + '</i></div>' }).join('') + '</div></div>' +
-        '<div class="box"><h3 style="margin-bottom:1rem">Správa produktů</h3><form id="productForm" class="product-form"><input name="name" placeholder="Název produktu" required><select name="category">' + CATS.map(function (c) { return '<option>' + c + '</option>' }).join('') + '</select><input name="price" type="number" min="0" step="1" placeholder="Cena" required><button class="btn solid" type="submit">' + ic('plus') + 'Přidat produkt</button></form><div class="product-list">' + PRODUCTS.map(function (p) { return '<div class="line"><span>' + esc(p.n) + '<small style="color:var(--mut)"> ' + esc(p.c) + ' · ' + usd(p.p) + '</small></span><button class="btn sm" data-remove-product="' + p.id + '">' + ic('x') + 'Odebrat</button></div>' }).join('') + '</div></div>' +
+        '<div class="box"><h3 style="margin-bottom:1rem">Správa produktů</h3><form id="productForm" class="product-form"><input name="name" placeholder="Název produktu" required><select name="category">' + CATS.map(function (c) { return '<option>' + c + '</option>' }).join('') + '</select><input name="price" type="number" min="0" step="1" placeholder="Cena" required><button class="btn solid" type="submit">' + ic('plus') + 'Přidat produkt</button></form><div class="product-list">' + PRODUCTS.map(function (p) { return '<div class="line"><span>' + esc(p.n) + '<span class="product-meta"><span class="meta-badge">' + esc(p.c) + '</span><span class="meta-badge price">' + usd(p.p) + '</span></span></span><button class="btn sm" data-remove-product="' + p.id + '">' + ic('x') + 'Odebrat</button></div>' }).join('') + '</div></div>' +
         '<div class="box"><h3 style="margin-bottom:0.5rem">Poslední objednávky</h3>' + (state.orders.length ? ordersTable(state.orders.slice(0, 3)) : '<p class="empty">Zatím žádná objednávka.</p>') + '</div></div>';
 }
 function removeProduct(id) {
