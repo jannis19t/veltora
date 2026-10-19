@@ -24,7 +24,19 @@ Projekt obsahuje [worker.js](./worker.js), [wrangler.toml](./wrangler.toml) a [s
 
 ## Discord přihlášení
 
-Frontend obsahuje OAuth2 návrat přes Discord, ale pro skutečné zapnutí je potřeba doplnit v `main.js`:
+Frontend používá dlouhodobé přihlášení přes OAuth2 callback ve Workeru. V Cloudflare nastav také secret:
+
+```bash
+npx wrangler secret put DISCORD_CLIENT_SECRET
+```
+
+Do Discord Developer Portalu přidej jako Redirect URL přesně:
+
+```text
+https://veltora.krixxfn.workers.dev/api/auth/callback
+```
+
+Veřejné hodnoty aplikace jsou nastavené v `main.js` a `wrangler.toml`:
 
 - `CLIENT_ID` – ID aplikace z Discord Developer Portalu,
 - `GUILD_ID` – ID Discord serveru,
@@ -33,7 +45,7 @@ Frontend obsahuje OAuth2 návrat přes Discord, ale pro skutečné zapnutí je p
 
 Při otevření lokálního souboru přes `file://` frontend používá produkční API automaticky. Pro přihlášení přes Discord ale doporučujeme testovat přímo na produkční URL.
 
-V Discord Developer Portalu musí být jako Redirect URL nastavená přesná hodnota `REDIRECT`. Pro produkční použití nepřidávej bot token do tohoto souboru; ověření rolí, objednávek a žádostí musí dělat backend. Bez těchto údajů web zůstává v bezpečném demo režimu.
+Client Secret zůstává pouze v Cloudflare Secret a nikdy se nedává do frontendu ani do GitHubu. Worker ukládá vlastní session do D1 a po expiraci access token obnovuje přihlášení refresh tokenem. Session skončí po ručním odhlášení nebo pokud Discord refresh token zneplatní.
 
 Webhooky nevyžadují Discord bota ani jeho online stav. Pokud se objednávka uloží, ale zpráva nepřijde, zkontroluj příslušný webhook secret a Cloudflare Worker Logs.
 

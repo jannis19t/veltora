@@ -4,7 +4,7 @@
 /* API = adresa vašeho backendu (velora-backend.js), který posílá zprávy do Discord kanálů a soukromé zprávy hráčům. */
 var PUBLIC_API = 'https://veltora.krixxfn.workers.dev/api';
 var CFG = { CLIENT_ID: '1561807208897978388', GUILD_ID: '1559887838059962481', ADMIN_ROLE_ID: '1561691507382034502', API: location.protocol === 'file:' ? PUBLIC_API : location.origin + '/api', REDIRECT: location.protocol === 'file:' ? 'https://veltora.krixxfn.workers.dev/' : location.origin + location.pathname };
-var TOKEN = ''; try { TOKEN = sessionStorage.getItem('vtok') || '' } catch (e) { }
+var TOKEN = '';
 var PRODUCTS = [
     { id: 1, n: 'Čokoládová tyčinka', c: 'Občerstvení', p: 3 },
     { id: 2, n: 'Brambůrky solené', c: 'Občerstvení', p: 4 },
@@ -29,7 +29,6 @@ var $ = function (s) { return document.querySelector(s) };
 function clearSession() {
     TOKEN = '';
     state.user = null;
-    try { sessionStorage.removeItem('vtok') } catch (e) { }
     save();
     renderAuth();
 }
@@ -66,7 +65,7 @@ function categoryClass(category) {
 function api(path, options) {
     if (!CFG.API) return Promise.reject(new Error('API není nastaveno'));
     options = options || {}; options.headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
-    if (TOKEN) options.headers.Authorization = 'Bearer ' + TOKEN;
+    options.credentials = 'include';
     return fetch(CFG.API + path, options).then(function (r) {
         if (r.status === 204) return null;
         return r.json().catch(function () { return {}; }).then(function (body) {
@@ -123,7 +122,7 @@ function go(v) {
 document.addEventListener('click', function (e) {
     var t = e.target;
     if (t.closest('[data-login]')) { login(); return }
-    if (t.closest('[data-logout]')) { clearSession(); go('home'); toast('Odhlášen'); return }
+    if (t.closest('[data-logout]')) { api('/auth/logout', { method: 'POST' }).catch(function () { }).then(function () { clearSession(); go('home'); toast('Odhlášen') }); return }
     var g = t.closest('[data-go]'); if (g) { go(g.dataset.go); return }
     var a = t.closest('[data-add]'); if (a) { addCart(+a.dataset.add); return }
     var c = t.closest('[data-cat]'); if (c) { state.filter = c.dataset.cat; renderShop(); go('shop'); return }
@@ -263,19 +262,13 @@ $('#collabForm').onsubmit = function (e) {
    Role se čte z endpointu členství na serveru. Skutečná data (objednávky, žádosti) musí chránit až backend,
    protože kontrola v prohlížeči jde obejít. */
 function login() {
-    location.href = 'https://discord.com/oauth2/authorize?client_id=' + CFG.CLIENT_ID + '&response_type=token&scope=' + encodeURIComponent('identify guilds.members.read') + '&redirect_uri=' + encodeURIComponent(CFG.REDIRECT);
+    location.href = CFG.API + '/auth/login';
 }
 async function handleReturn() {
-    var t = new URLSearchParams(location.hash.slice(1)).get('access_token');
-    if (!t) return;
-    history.replaceState(null, '', location.pathname); TOKEN = t; try { sessionStorage.setItem('vtok', t) } catch (e) { }
     try {
-        var r = await fetch('https://discord.com/api/users/@me/guilds/' + CFG.GUILD_ID + '/member', { headers: { Authorization: 'Bearer ' + t } });
-        if (!r.ok) throw 0;
-        var m = await r.json();
-        state.user = { name: m.nick || m.user.global_name || m.user.username, admin: (m.roles || []).indexOf(CFG.ADMIN_ROLE_ID) > -1, id: m.user.id };
-        save(); renderAuth(); toast('Přihlášen jako ' + (isAdmin() ? 'admin' : 'visitor'));
-    } catch (e) { toast('Přihlášení se nepovedlo. Jsi na našem serveru?') }
+        state.user = await api('/auth/me');
+        save(); renderAuth();
+    } catch (e) { clearSession() }
 }
 function renderAuth() {
     document.body.classList.toggle('admin', isAdmin());
@@ -283,7 +276,6 @@ function renderAuth() {
     $('#auth').innerHTML = u ? '<button class="prof" data-go="profile" aria-label="Můj profil"><span class="av">' + esc(u.name[0]) + '</span>' + esc(u.name) + '<span class="role' + (isAdmin() ? ' a' : '') + '">' + (isAdmin() ? 'Admin' : 'Visitor') + '</span></button>' : '<button class="btn solid" data-login>Přihlásit přes Discord</button>';
 }
 load();
-if (!TOKEN && state.user) clearSession();
 function renderTicker() { var T = ['Nejlepší dostupný obchod ve městě', 'Nejlepší ceny na trhu', 'Všechno na jednom místě', 'Čerstvé zboží každý den', 'Elektronika, občerstvení i oblečení', 'Objednej a my se ozveme']; var g = T.map(function (t) { return '<span>' + t + '</span>' }).join(''); $('#tick').innerHTML = g + g + g + g }
 renderTicker(); renderAuth(); renderHome(); renderShop(); renderCart(); updateContactFields();
 $('#q').oninput = renderShop; $('#sort').onchange = renderShop;

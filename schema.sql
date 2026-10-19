@@ -26,6 +26,17 @@ CREATE TABLE IF NOT EXISTS collaboration_requests (
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS auth_sessions (
+    id TEXT PRIMARY KEY,
+    discord_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    admin INTEGER NOT NULL DEFAULT 0,
+    access_token TEXT NOT NULL,
+    refresh_token TEXT NOT NULL,
+    expires_at INTEGER NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (unixepoch())
+);
+
 INSERT OR IGNORE INTO products (id, name, category, price) VALUES
     (1, 'Čokoládová tyčinka', 'Občerstvení', 3),
     (2, 'Brambůrky solené', 'Občerstvení', 4),
