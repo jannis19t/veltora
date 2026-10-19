@@ -157,12 +157,15 @@ function renderCart() {
         '<div class="line" style="border:0"><b>Celkem</b><b>' + usd(cartTotal()) + '</b></div><button class="btn solid" id="order">Odeslat objednávku</button>';
     $('#order').onclick = order;
 }
-function order() {
+async function order() {
     if (!state.user) { $('#drawer').classList.remove('on'); toast('Pro objednávku se přihlas přes Discord'); return }
     var items = Object.keys(state.cart).map(function (id) { var p = productById(id); return p ? p.n + ' ×' + state.cart[id] : '' }).filter(Boolean);
     var o = { id: 'VM-' + (1001 + state.orders.length), date: new Date().toLocaleDateString('cs-CZ'), items: items.join(', '), total: cartTotal(), by: state.user.name, uid: state.user.id, status: 'Nová' };
-    state.orders.unshift(o); notify('order', o);
-    state.cart = {}; save(); renderCart(); $('#drawer').classList.remove('on'); toast('Objednávka odeslána'); go(isAdmin() ? 'orders' : 'profile');
+    state.orders.unshift(o);
+    var sent = await notify('order', o);
+    state.cart = {}; save(); renderCart(); $('#drawer').classList.remove('on');
+    if (sent) toast('Objednávka odeslána a oznámení bylo posláno');
+    go(isAdmin() ? 'orders' : 'profile');
 }
 $('#cartBtn').onclick = function () { $('#drawer').classList.add('on') };
 $('#closeCart').onclick = function () { $('#drawer').classList.remove('on') };
@@ -177,10 +180,10 @@ function tag(s) { var c = s === 'Nová' ? 'nova' : (s === 'Hotovo' || s === 'Př
 function notify(type, data, successMessage) {
     if (!CFG.API) return Promise.reject(new Error('API není nastaveno'));
     return api('/' + type, { method: 'POST', body: JSON.stringify(data) }).then(function (result) {
-        if (result && result.discordNotified === false) toast('Data jsou uložená, ale Discord zpráva se nepodařila odeslat');
+        if (result && result.discordNotified === false) { toast('Objednávka je uložená, ale Discord oznámení se nepodařilo odeslat'); return false }
         else if (successMessage) toast(successMessage);
-        return result;
-    }).catch(function () { toast('Objednávku se nepodařilo odeslat na server') });
+        return true;
+    }).catch(function () { toast('Objednávku se nepodařilo odeslat na server'); return false });
 }
 function decide(i, v) {
     var c = state.collabs[i]; if (!c) return; c.status = v; save(); renderInbox(); renderDash();

@@ -59,7 +59,7 @@ async function notifyDiscord(env, type, data, requestUrl) {
   if (!webhookUrl) throw new Error("Discord webhook není nastavený");
   const siteUrl = env.PUBLIC_URL || new URL(requestUrl).origin;
   const content = type === "order"
-    ? `📦 **Nová objednávka ${data.id}**\nZákazník: ${data.by}\nPoložky: ${data.items}\nCelkem: ${data.total}\n\nOtevřít administraci: ${siteUrl}`
+    ? `📦 **Přišla nová objednávka ${data.id}**\n\nOtevřít administraci: ${siteUrl}`
     : data.type === "Stížnost"
       ? `⚠️ **Nová stížnost ${data.id}**\nJméno: ${data.name}\nČíslo objednávky: ${data.phone}\nPopis: ${data.msg}\n\nOtevřít administraci: ${siteUrl}`
       : `🤝 **Nová žádost o spolupráci**\nJméno: ${data.name}\nTyp: ${data.type}\nKontakt: ${data.phone}\n\nOtevřít administraci: ${siteUrl}`;
