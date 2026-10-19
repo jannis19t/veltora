@@ -60,7 +60,13 @@ function api(path, options) {
     if (!CFG.API) return Promise.reject(new Error('API není nastaveno'));
     options = options || {}; options.headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
     if (TOKEN) options.headers.Authorization = 'Bearer ' + TOKEN;
-    return fetch(CFG.API + path, options).then(function (r) { if (!r.ok) throw new Error('API ' + r.status); return r.status === 204 ? null : r.json() });
+    return fetch(CFG.API + path, options).then(function (r) {
+        if (r.status === 204) return null;
+        return r.json().catch(function () { return {}; }).then(function (body) {
+            if (!r.ok) throw new Error(body.error || ('API ' + r.status));
+            return body;
+        });
+    });
 }
 function loadProducts() {
     api('/products').then(function (data) {
@@ -81,11 +87,11 @@ function loadUserData() {
     api('/orders').then(function (orders) {
         state.orders = orders || [];
         if (document.querySelector('.view.on').id === 'profile') renderProfile();
-    }).catch(function () { toast('Objednávky se nepodařilo načíst') });
+    }).catch(function (error) { toast(error.message === 'Nepřihlášený uživatel' || error.message.indexOf('Discord token') > -1 ? 'Přihlášení vypršelo. Přihlas se přes Discord znovu.' : 'Objednávky se nepodařilo načíst') });
     api('/requests').then(function (requests) {
         state.collabs = requests || [];
         if (document.querySelector('.view.on').id === 'profile') renderProfile();
-    }).catch(function () { toast('Žádosti se nepodařilo načíst') });
+    }).catch(function (error) { toast(error.message === 'Nepřihlášený uživatel' || error.message.indexOf('Discord token') > -1 ? 'Přihlášení vypršelo. Přihlas se přes Discord znovu.' : 'Žádosti se nepodařilo načíst') });
 }
 
 function go(v) {

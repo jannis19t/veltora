@@ -11,14 +11,21 @@ function cors(response) {
   return new Response(response.body, { status: response.status, headers });
 }
 
+class ApiError extends Error {
+  constructor(message, status = 400) {
+    super(message);
+    this.status = status;
+  }
+}
+
 async function discordMember(request, env) {
   const auth = request.headers.get("Authorization") || "";
-  if (!auth.startsWith("Bearer ")) throw new Error("Nepřihlášený uživatel");
+  if (!auth.startsWith("Bearer ")) throw new ApiError("Nepřihlášený uživatel", 401);
   const token = auth.slice(7);
   const response = await fetch(`https://discord.com/api/users/@me/guilds/${env.GUILD_ID}/member`, {
     headers: { Authorization: `Bearer ${token}` }
   });
-  if (!response.ok) throw new Error("Discord token není platný nebo uživatel není na serveru");
+  if (!response.ok) throw new ApiError("Discord token není platný nebo uživatel není na serveru", 401);
   const member = await response.json();
   return {
     id: member.user.id,
@@ -29,7 +36,7 @@ async function discordMember(request, env) {
 
 async function requireUser(request, env, admin = false) {
   const user = await discordMember(request, env);
-  if (admin && !user.admin) throw new Error("Nemáš oprávnění administrátora");
+  if (admin && !user.admin) throw new ApiError("Nemáš oprávnění administrátora", 403);
   return user;
 }
 
@@ -162,7 +169,7 @@ export default {
       if (url.pathname.startsWith("/api/") || url.pathname === "/api") return cors(await handleApi(request, env));
       return env.ASSETS.fetch(request);
     } catch (error) {
-      return cors(json({ error: error.message || "Chyba serveru" }, 500));
+      return cors(json({ error: error.message || "Chyba serveru" }, error.status || 500));
     }
   }
 };
