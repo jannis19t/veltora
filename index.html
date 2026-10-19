@@ -91,12 +91,13 @@
             <nav aria-label="Hlavní menu">
                 <button data-go="home" class="on">Domů</button>
                 <button data-go="shop">Obchod</button>
-                <button data-go="collab">Spolupráce</button>
+                <button data-go="collab">Kontakt</button>
                 <button data-go="dash" class="adm">Dashboard</button>
                 <button data-go="orders" class="adm">Objednávky</button>
                 <button data-go="inbox" class="adm">Žádosti</button>
             </nav>
             <div class="right">
+                <button class="menu-toggle icon-btn" id="menuToggle" aria-label="Otevřít menu" aria-expanded="false">☰</button>
                 <button class="icon-btn" id="cartBtn" aria-label="Košík"><svg class="ic" viewBox="0 0 16 16">
                         <use href="#i-cart" />
                     </svg><span class="cnt" id="cartN">0</span></button>
@@ -154,24 +155,34 @@
         </section>
 
         <section class="view" id="collab">
-            <h2 style="margin-top:0">Žádost o spolupráci</h2>
-            <p style="color:var(--mut);max-width:36rem;margin:0 0 1.5rem">Dodáváš zboží, nabízíš partnerství nebo chceš
-                prodávat u nás? Napiš nám a ozveme se. Pokud jsi přihlášený přes Discord, odpověď dostaneš do soukromých
-                zpráv.
-            </p>
+            <h2 style="margin-top:0">Kontakt</h2>
+            <p style="color:var(--mut);max-width:36rem;margin:0 0 1.5rem">Vyberte typ zprávy a vyplňte formulář. Po odeslání se vám ozveme.</p>
             <form id="collabForm">
-                <label>Jméno nebo firma<input name="name" required></label>
-                <label>Kontakt (telefonní číslo)<input name="phone" type="tel" placeholder="555-0142" required></label>
-                <label>Typ spolupráce
-                    <select name="type">
+                <label>Typ zprávy
+                    <select name="contactType" id="contactType">
+                        <option value="collaboration">Spolupráce</option>
+                        <option value="complaint">Stížnost</option>
+                    </select>
+                </label>
+                <div id="cooperationFields">
+                    <label>Jméno nebo firma<input name="name" required></label>
+                    <label>Kontakt (telefonní číslo)<input name="phone" type="tel" placeholder="555-0142" required></label>
+                    <label>Oblast spolupráce
+                        <select name="type">
                         <option>Dodavatel zboží</option>
                         <option>Partnerství a reklama</option>
                         <option>Prodej přes VELORA</option>
                         <option>Jiné</option>
-                    </select>
-                </label>
-                <label>Zpráva<textarea name="msg" required></textarea></label>
-                <button class="btn solid" type="submit">Odeslat žádost</button>
+                        </select>
+                    </label>
+                    <label>Zpráva<textarea name="msg" required></textarea></label>
+                </div>
+                <div id="complaintFields" hidden>
+                    <label>Jméno<input name="complaintName"></label>
+                    <label>Číslo objednávky<input name="orderId" placeholder="Např. VM-1001"></label>
+                    <label>Popis stížnosti<textarea name="complaintMsg"></textarea></label>
+                </div>
+                <button class="btn solid" type="submit">Odeslat zprávu</button>
             </form>
         </section>
     </main>

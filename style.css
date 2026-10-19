@@ -13,6 +13,11 @@
     padding-bottom: env(safe-area-inset-bottom, 0px)
 }
 
+.menu-toggle {
+    display: none;
+    font-size: 1.2rem
+}
+
 *,
 *::before,
 *::after {
@@ -75,7 +80,7 @@ header {
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
     gap: 2rem;
-    padding: 1rem 1.25rem
+    padding: 1rem .75rem
 }
 
 .brand {
@@ -267,7 +272,7 @@ body.admin nav .adm {
 main {
     max-width: 72rem;
     margin: 0 auto;
-    padding: 2rem 1.25rem 6rem
+    padding: 2rem .75rem 6rem
 }
 
 .view {
@@ -730,7 +735,7 @@ textarea {
 
 footer {
     border-top: 0.0625rem solid var(--line);
-    padding: 1.5rem 1.25rem 5rem;
+    padding: 1.5rem .75rem 5rem;
     text-align: center;
     color: var(--mut);
     font-size: .875rem;
@@ -744,11 +749,29 @@ footer {
     }
 
     nav {
+        display: none;
         grid-column: 1 / -1;
         grid-row: 2;
-        overflow-x: auto;
+        flex-direction: column;
         justify-content: flex-start;
-        padding-bottom: .1rem
+        gap: .25rem;
+        padding: .5rem;
+        background: var(--s1);
+        border: .0625rem solid var(--line);
+        border-radius: .75rem
+    }
+
+    nav.open {
+        display: flex
+    }
+
+    nav button {
+        width: 100%;
+        text-align: left
+    }
+
+    .menu-toggle {
+        display: grid
     }
 }
 

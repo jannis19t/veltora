@@ -38,12 +38,16 @@ function product(row) {
 }
 
 async function notifyDiscord(env, type, data, requestUrl) {
-  const channelId = type === "order" ? env.ORDERS_CHANNEL_ID : env.REQUESTS_CHANNEL_ID;
+  const channelId = type === "order"
+    ? env.ORDERS_CHANNEL_ID
+    : data.type === "Stížnost" ? env.COMPLAINTS_CHANNEL_ID : env.REQUESTS_CHANNEL_ID;
   if (!env.DISCORD_BOT_TOKEN || !channelId) return;
   const siteUrl = env.PUBLIC_URL || new URL(requestUrl).origin;
   const content = type === "order"
     ? `📦 **Nová objednávka ${data.id}**\nZákazník: ${data.by}\nPoložky: ${data.items}\nCelkem: ${data.total}\n\nOtevřít administraci: ${siteUrl}`
-    : `🤝 **Nová žádost o spolupráci**\nJméno: ${data.name}\nTyp: ${data.type}\nKontakt: ${data.phone}\n\nOtevřít administraci: ${siteUrl}`;
+    : data.type === "Stížnost"
+      ? `⚠️ **Nová stížnost ${data.id}**\nJméno: ${data.name}\nČíslo objednávky: ${data.phone}\nPopis: ${data.msg}\n\nOtevřít administraci: ${siteUrl}`
+      : `🤝 **Nová žádost o spolupráci**\nJméno: ${data.name}\nTyp: ${data.type}\nKontakt: ${data.phone}\n\nOtevřít administraci: ${siteUrl}`;
   const response = await fetch(`https://discord.com/api/channels/${channelId}/messages`, {
     method: "POST",
     headers: { Authorization: `Bot ${env.DISCORD_BOT_TOKEN}`, "Content-Type": "application/json" },
@@ -104,13 +108,16 @@ async function handleApi(request, env) {
     if (!body.id || !body.items || !Number.isFinite(body.total)) return json({ error: "Neplatná objednávka" }, 400);
     await env.DB.prepare("INSERT INTO orders (id, discord_id, customer_name, items, total) VALUES (?, ?, ?, ?, ?)")
       .bind(body.id, user.id, user.name, body.items, body.total).run();
-    await notifyDiscord(env, "order", body, request.url);
-    return json({ ok: true }, 201);
+    let discordNotified = true;
+    try { await notifyDiscord(env, "order", body, request.url); } catch (_) { discordNotified = false; }
+    return json({ ok: true, discordNotified }, 201);
   }
 
   if (request.method === "GET" && path === "orders") {
-    await requireUser(request, env, true);
-    const rows = await env.DB.prepare("SELECT id, customer_name AS by, items, total, status, created_at AS date FROM orders ORDER BY created_at DESC").all();
+    const user = await requireUser(request, env);
+    const rows = user.admin
+      ? await env.DB.prepare("SELECT id, discord_id AS uid, customer_name AS by, items, total, status, created_at AS date FROM orders ORDER BY created_at DESC").all()
+      : await env.DB.prepare("SELECT id, discord_id AS uid, customer_name AS by, items, total, status, created_at AS date FROM orders WHERE discord_id = ? ORDER BY created_at DESC").bind(user.id).all();
     return json(rows.results);
   }
 
@@ -123,8 +130,10 @@ async function handleApi(request, env) {
   }
 
   if (request.method === "GET" && path === "requests") {
-    await requireUser(request, env, true);
-    const rows = await env.DB.prepare("SELECT id, discord_id AS uid, name, type, phone, message AS msg, status FROM collaboration_requests ORDER BY created_at DESC").all();
+    const user = await requireUser(request, env);
+    const rows = user.admin
+      ? await env.DB.prepare("SELECT id, discord_id AS uid, name, type, phone, message AS msg, status FROM collaboration_requests ORDER BY created_at DESC").all()
+      : await env.DB.prepare("SELECT id, discord_id AS uid, name, type, phone, message AS msg, status FROM collaboration_requests WHERE discord_id = ? ORDER BY created_at DESC").bind(user.id).all();
     return json(rows.results);
   }
 
@@ -150,8 +159,9 @@ async function handleApi(request, env) {
     if (!body.name || !body.type || !body.phone || !body.msg) return json({ error: "Neplatná žádost" }, 400);
     await env.DB.prepare("INSERT INTO collaboration_requests (id, discord_id, name, type, phone, message) VALUES (?, ?, ?, ?, ?, ?)")
       .bind(body.id, user ? user.id : null, body.name, body.type, body.phone, body.msg).run();
-    await notifyDiscord(env, "request", body, request.url);
-    return json({ ok: true }, 201);
+    let discordNotified = true;
+    try { await notifyDiscord(env, "request", body, request.url); } catch (_) { discordNotified = false; }
+    return json({ ok: true, discordNotified }, 201);
   }
 
   return json({ error: "Endpoint nenalezen" }, 404);
