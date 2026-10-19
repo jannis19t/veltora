@@ -38,19 +38,19 @@ function product(row) {
 }
 
 async function notifyDiscord(env, type, data, requestUrl) {
-  const channelId = type === "order"
-    ? env.ORDERS_CHANNEL_ID
-    : data.type === "Stížnost" ? env.COMPLAINTS_CHANNEL_ID : env.REQUESTS_CHANNEL_ID;
-  if (!env.DISCORD_BOT_TOKEN || !channelId) return;
+  const webhookUrl = type === "order"
+    ? env.ORDERS_WEBHOOK_URL
+    : data.type === "Stížnost" ? env.COMPLAINTS_WEBHOOK_URL : env.REQUESTS_WEBHOOK_URL;
+  if (!webhookUrl) throw new Error("Discord webhook není nastavený");
   const siteUrl = env.PUBLIC_URL || new URL(requestUrl).origin;
   const content = type === "order"
     ? `📦 **Nová objednávka ${data.id}**\nZákazník: ${data.by}\nPoložky: ${data.items}\nCelkem: ${data.total}\n\nOtevřít administraci: ${siteUrl}`
     : data.type === "Stížnost"
       ? `⚠️ **Nová stížnost ${data.id}**\nJméno: ${data.name}\nČíslo objednávky: ${data.phone}\nPopis: ${data.msg}\n\nOtevřít administraci: ${siteUrl}`
       : `🤝 **Nová žádost o spolupráci**\nJméno: ${data.name}\nTyp: ${data.type}\nKontakt: ${data.phone}\n\nOtevřít administraci: ${siteUrl}`;
-  const response = await fetch(`https://discord.com/api/channels/${channelId}/messages`, {
+  const response = await fetch(`${webhookUrl}?wait=true`, {
     method: "POST",
-    headers: { Authorization: `Bot ${env.DISCORD_BOT_TOKEN}`, "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ content })
   });
   if (!response.ok) {
@@ -60,19 +60,7 @@ async function notifyDiscord(env, type, data, requestUrl) {
 }
 
 async function notifyDecision(env, data) {
-  if (!env.DISCORD_BOT_TOKEN || !data.uid) return;
-  const channel = await fetch("https://discord.com/api/users/@me/channels", {
-    method: "POST",
-    headers: { Authorization: `Bot ${env.DISCORD_BOT_TOKEN}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ recipient_id: data.uid })
-  });
-  if (!channel.ok) return;
-  const dm = await channel.json();
-  await fetch(`https://discord.com/api/channels/${dm.id}/messages`, {
-    method: "POST",
-    headers: { Authorization: `Bot ${env.DISCORD_BOT_TOKEN}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ content: `Tvoje žádost ${data.id} byla aktualizována: ${data.status}.` })
-  });
+  return;
 }
 
 async function handleApi(request, env) {

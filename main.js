@@ -45,6 +45,9 @@ function load() {
     } catch (e) { }
 }
 function productById(id) { return PRODUCTS.find(function (p) { return p.id === Number(id) }) }
+function categoryClass(category) {
+    return 'category-' + String(category).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
 function api(path, options) {
     if (!CFG.API) return Promise.reject(new Error('API není nastaveno'));
     options = options || {}; options.headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
@@ -101,7 +104,7 @@ document.addEventListener('click', function (e) {
     var rp = t.closest('[data-remove-product]'); if (rp) { removeProduct(+rp.dataset.removeProduct); return }
 });
 
-function card(p) { return '<article class="card"><div class="pic">' + ic(CICON[p.c]) + '</div><b>' + esc(p.n) + '</b><div class="product-meta"><span class="meta-badge">' + esc(p.c) + '</span><span class="meta-badge price">' + usd(p.p) + '</span></div><div class="pr"><span></span><button class="icon-btn" data-add="' + p.id + '" aria-label="Přidat do košíku: ' + esc(p.n) + '">' + ic('plus') + '</button></div></article>' }
+function card(p) { return '<article class="card"><div class="pic">' + ic(CICON[p.c]) + '</div><b>' + esc(p.n) + '</b><div class="product-meta"><span class="meta-badge ' + categoryClass(p.c) + '">' + esc(p.c) + '</span><span class="meta-badge price">' + usd(p.p) + '</span></div><div class="pr"><span></span><button class="icon-btn" data-add="' + p.id + '" aria-label="Přidat do košíku: ' + esc(p.n) + '">' + ic('plus') + '</button></div></article>' }
 function renderShop() {
     $('#chips').innerHTML = ['Vše'].concat(CATS).map(function (c) { return '<button class="pill' + (c === state.filter ? ' on' : '') + '" data-cat="' + c + '">' + c + '</button>' }).join('');
     var q = ($('#q').value || '').toLowerCase(), so = $('#sort').value;
@@ -153,8 +156,7 @@ function notify(type, data, successMessage) {
 function decide(i, v) {
     var c = state.collabs[i]; if (!c) return; c.status = v; save(); renderInbox(); renderDash();
     if (CFG.API) api('/request-decision', { method: 'POST', body: JSON.stringify({ id: c.id, status: v }) }).catch(function () { toast('Stav žádosti se nepodařilo uložit') });
-    if (c.uid) { notify('decision', { uid: c.uid, id: c.id, name: c.name, status: v }); toast('Žádost: ' + v.toLowerCase() + '. Hráči se posílá soukromá zpráva') }
-    else toast('Žádost: ' + v.toLowerCase() + '. Hráč nemá Discord, zprávu poslat nelze');
+    toast('Žádost: ' + v.toLowerCase() + '. Stav byl uložen.');
 }
 function setSt(id, s) { state.orders.forEach(function (o) { if (o.id === id) o.status = s }); save(); renderOrders(); renderDash(); if (CFG.API) api('/order-status', { method: 'POST', body: JSON.stringify({ id: id, status: s }) }).catch(function () { toast('Stav objednávky se nepodařilo uložit') }); toast('Objednávka ' + id + ': ' + s) }
 function ordersTable(list, act) { return '<div class="tw"><table><thead><tr><th>Číslo</th><th>Zákazník</th><th>Položky</th><th>Cena</th><th>Stav</th>' + (act ? '<th>Změnit stav</th>' : '') + '</tr></thead><tbody>' + list.map(function (o) { return '<tr><td>' + o.id + '<br><small style="color:var(--mut)">' + o.date + '</small></td><td>' + esc(o.by || 'neznámý') + '</td><td>' + esc(o.items) + '</td><td>' + usd(o.total) + '</td><td>' + tag(o.status) + '</td>' + (act ? '<td><div class="acts"><button class="btn sm' + (o.status === 'V procesu' ? ' on' : '') + '" data-st="1" data-oid="' + o.id + '" data-s="V procesu">' + ic('hourglass') + 'V procesu</button><button class="btn sm' + (o.status === 'Hotovo' ? ' on' : '') + '" data-st="1" data-oid="' + o.id + '" data-s="Hotovo">' + ic('check') + 'Hotovo</button></div></td>' : '') + '</tr>' }).join('') + '</tbody></table></div>' }
@@ -166,7 +168,7 @@ function renderDash() {
         '<div class="box stat"><b>' + usd(sum) + '</b><span>Tržby celkem</span></div>' +
         '<div class="box stat"><b>' + state.orders.filter(function (o) { return o.status !== 'Hotovo' }).length + '</b><span>Nevyřízené objednávky</span></div>' +
         '<div class="box stat"><b>' + state.collabs.length + '</b><span>Žádosti o spolupráci</span></div></div>' +
-        '<div class="box"><h3 style="margin-bottom:1rem">Správa produktů</h3><form id="productForm" class="product-form"><input name="name" placeholder="Název produktu" required><select name="category">' + CATS.map(function (c) { return '<option>' + c + '</option>' }).join('') + '</select><input name="price" type="number" min="0" step="1" placeholder="Cena" required><button class="btn solid" type="submit">' + ic('plus') + 'Přidat produkt</button></form><div class="product-list">' + PRODUCTS.map(function (p) { return '<div class="line"><span>' + esc(p.n) + '<span class="product-meta"><span class="meta-badge">' + esc(p.c) + '</span><span class="meta-badge price">' + usd(p.p) + '</span></span></span><button class="btn sm" data-remove-product="' + p.id + '">' + ic('x') + 'Odebrat</button></div>' }).join('') + '</div></div>' +
+        '<div class="box"><h3 style="margin-bottom:1rem">Správa produktů</h3><form id="productForm" class="product-form"><input name="name" placeholder="Název produktu" required><select name="category">' + CATS.map(function (c) { return '<option>' + c + '</option>' }).join('') + '</select><input name="price" type="number" min="0" step="1" placeholder="Cena" required><button class="btn solid" type="submit">' + ic('plus') + 'Přidat produkt</button></form><div class="product-list">' + PRODUCTS.map(function (p) { return '<div class="line"><span>' + esc(p.n) + '<span class="product-meta"><span class="meta-badge ' + categoryClass(p.c) + '">' + esc(p.c) + '</span><span class="meta-badge price">' + usd(p.p) + '</span></span></span><button class="btn sm" data-remove-product="' + p.id + '">' + ic('x') + 'Odebrat</button></div>' }).join('') + '</div></div>' +
         '<div class="box"><h3 style="margin-bottom:0.5rem">Poslední objednávky</h3>' + (state.orders.length ? ordersTable(state.orders.slice(0, 3)) : '<p class="empty">Zatím žádná objednávka.</p>') + '</div></div>';
 }
 function removeProduct(id) {
