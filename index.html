@@ -1,16 +1,198 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="cs">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>VELORA MARKET</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <link rel="icon" href="logo.png">
-    <title>Velora Market</title>
 </head>
 
 <body>
-    <h1>velora</h1>
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+        <defs>
+            <linearGradient id="gp" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#ff4db0" />
+                <stop offset="1" stop-color="#b30f63" />
+            </linearGradient>
+            <linearGradient id="gs" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#ffffff" />
+                <stop offset="1" stop-color="#8d8a94" />
+            </linearGradient>
+            <g id="vlogo">
+                <path d="M50 8l7 8 9-6-3 12H37L34 10l9 6z" fill="url(#gp)" />
+                <path d="M6 30h30l16 36 4 10L40 90z" fill="url(#gp)" />
+                <path d="M94 30H64L48 66l-4 10 16 14z" fill="url(#gs)" />
+                <path d="M44 28h12L50 40z" fill="url(#gp)" />
+                <path d="M4 66C20 80 70 78 96 58" fill="none" stroke="#ff2e9a" stroke-width="3"
+                    stroke-linecap="round" />
+            </g>
+            <symbol id="i-cart" viewBox="0 0 16 16">
+                <path d="M1 1.500h1.500l1.600 8h8l1.400-6H3.200" />
+                <circle cx="5.500" cy="13" r="1" />
+                <circle cx="11.500" cy="13" r="1" />
+            </symbol>
+            <symbol id="i-logout" viewBox="0 0 16 16">
+                <path d="M9 4V2.500H2.500v11H9V12M6 8h8M11.500 5.500L14 8l-2.500 2.500" />
+            </symbol>
+            <symbol id="i-plus" viewBox="0 0 16 16">
+                <path d="M8 3v10M3 8h10" />
+            </symbol>
+            <symbol id="i-minus" viewBox="0 0 16 16">
+                <path d="M3 8h10" />
+            </symbol>
+            <symbol id="i-x" viewBox="0 0 16 16">
+                <path d="M3.500 3.500l9 9M12.500 3.500l-9 9" />
+            </symbol>
+            <symbol id="i-check" viewBox="0 0 16 16">
+                <path d="M3 8.500l3.200 3L13 4.500" />
+            </symbol>
+            <symbol id="i-hourglass" viewBox="0 0 16 16">
+                <path
+                    d="M4 1.500h8M4 14.500h8M4.500 1.500c0 3 3.500 4 3.500 6.500s-3.500 3.500-3.500 6.500M11.500 1.500c0 3-3.500 4-3.500 6.500s3.500 3.500 3.500 6.500" />
+            </symbol>
+            <symbol id="i-shield" viewBox="0 0 16 16">
+                <path d="M8 1.500l5.500 2v4c0 3.500-2.500 6-5.500 7-3-1-5.500-3.500-5.500-7v-4z" />
+                <path d="M5.500 8l2 2 3-3.500" />
+            </symbol>
+            <symbol id="i-cup" viewBox="0 0 16 16">
+                <path d="M3.500 5.500h9l-.8 9H4.300z" />
+                <path d="M3 5.500h10M9 5.500l1.500-4h2" />
+            </symbol>
+            <symbol id="i-basket" viewBox="0 0 16 16">
+                <path d="M1.500 6h13l-1.500 7.500H3z" />
+                <path d="M5 6l2.500-4M11 6L8.500 2M6 8.500v3M8 8.500v3M10 8.500v3" />
+            </symbol>
+            <symbol id="i-cpu" viewBox="0 0 16 16">
+                <rect x="4" y="4" width="8" height="8" rx="1" />
+                <rect x="6.500" y="6.500" width="3" height="3" />
+                <path d="M6 1.500V4M10 1.500V4M6 12v2.500M10 12v2.500M1.500 6H4M1.500 10H4M12 6h2.500M12 10h2.500" />
+            </symbol>
+            <symbol id="i-bag" viewBox="0 0 16 16">
+                <path d="M2.500 5h11l.8 9.500H1.700z" />
+                <path d="M5.500 5V4a2.500 2.500 0 0 1 5 0v1" />
+            </symbol>
+            <symbol id="i-house" viewBox="0 0 16 16">
+                <path d="M2 8l6-6 6 6M3.500 7v7.500h9V7" />
+                <path d="M6.500 14.500v-4h3v4" />
+            </symbol>
+        </defs>
+    </svg>
+
+    <header>
+        <div class="bar">
+            <button class="brand" data-go="home" aria-label="VELORA MARKET domů"><svg viewBox="0 0 100 100"
+                    aria-hidden="true">
+                    <use href="#vlogo" />
+                </svg>VELORA <span>MARKET</span></button>
+            <nav aria-label="Hlavní menu">
+                <button data-go="home" class="on">Domů</button>
+                <button data-go="shop">Obchod</button>
+                <button data-go="collab">Spolupráce</button>
+                <button data-go="dash" class="adm">Dashboard</button>
+                <button data-go="orders" class="adm">Objednávky</button>
+                <button data-go="inbox" class="adm">Žádosti</button>
+            </nav>
+            <div class="right">
+                <button class="icon-btn" id="cartBtn" aria-label="Košík"><svg class="ic" viewBox="0 0 16 16">
+                        <use href="#i-cart" />
+                    </svg><span class="cnt" id="cartN">0</span></button>
+                <div id="auth"></div>
+            </div>
+        </div>
+    </header>
+    <div class="ticker" aria-label="Naše výhody">
+        <div class="ticker-track" id="tick"></div>
+    </div>
+
+    <main>
+        <section class="view on" id="home">
+            <div class="hero">
+                <div>
+                    <h1>Všechno, co potřebuješ, <em>na jednom místě.</em></h1>
+                    <p>Občerstvení, potraviny, elektronika, oblečení a věci do domácnosti. Vyber, objednej a my se
+                        ozveme.</p>
+                    <div class="row"><button class="btn solid" data-go="shop">Otevřít obchod</button><button class="btn"
+                            data-go="collab">Chci spolupracovat</button></div>
+                </div>
+                <div class="logo"><svg viewBox="0 0 100 100" role="img" aria-label="Logo VELORA MARKET">
+                        <use href="#vlogo" />
+                    </svg></div>
+            </div>
+            <h2>Kategorie</h2>
+            <div class="pills" id="cats"></div>
+            <h2>Oblíbené produkty</h2>
+            <div class="grid" id="topGrid"></div>
+        </section>
+
+        <section class="view" id="shop">
+            <h2 style="margin-top:0">Obchod</h2>
+            <div class="pills" id="chips" style="margin-bottom:1rem"></div>
+            <div class="row" style="margin-bottom:1.25rem"><input id="q" type="search" placeholder="Hledat produkt"
+                    aria-label="Hledat produkt" style="flex:1;min-width:12rem"><select id="sort" aria-label="Řazení">
+                    <option value="">Řazení</option>
+                    <option value="a">Cena vzestupně</option>
+                    <option value="d">Cena sestupně</option>
+                </select></div>
+            <div class="grid" id="grid"></div>
+        </section>
+
+        <section class="view" id="dash">
+            <div id="dashBody"></div>
+        </section>
+        <section class="view" id="orders">
+            <div id="ordersBody"></div>
+        </section>
+        <section class="view" id="inbox">
+            <div id="inboxBody"></div>
+        </section>
+        <section class="view" id="profile">
+            <div id="profileBody"></div>
+        </section>
+
+        <section class="view" id="collab">
+            <h2 style="margin-top:0">Žádost o spolupráci</h2>
+            <p style="color:var(--mut);max-width:36rem;margin:0 0 1.5rem">Dodáváš zboží, nabízíš partnerství nebo chceš
+                prodávat u nás? Napiš nám a ozveme se. Pokud jsi přihlášený přes Discord, odpověď dostaneš do soukromých
+                zpráv.
+            </p>
+            <form id="collabForm">
+                <label>Jméno nebo firma<input name="name" required></label>
+                <label>Kontakt (telefonní číslo)<input name="phone" type="tel" placeholder="555-0142" required></label>
+                <label>Typ spolupráce
+                    <select name="type">
+                        <option>Dodavatel zboží</option>
+                        <option>Partnerství a reklama</option>
+                        <option>Prodej přes VELORA</option>
+                        <option>Jiné</option>
+                    </select>
+                </label>
+                <label>Zpráva<textarea name="msg" required></textarea></label>
+                <button class="btn solid" type="submit">Odeslat žádost</button>
+            </form>
+        </section>
+    </main>
+
+    <aside class="drawer" id="drawer" aria-label="Košík">
+        <div class="line">
+            <h2 style="margin:0">Košík</h2><button class="icon-btn" id="closeCart" aria-label="Zavřít"><svg class="ic"
+                    viewBox="0 0 16 16">
+                    <use href="#i-x" />
+                </svg></button>
+        </div>
+        <div id="cartBody"></div>
+    </aside>
+    <div class="toast" id="toast" role="status"></div>
+    <div class="demo" id="demo" hidden><span>Demo role z Discordu</span><button
+            data-demo="out">Odhlášený</button><button data-demo="member">Člen bez role</button><button
+            data-demo="admin">Admin</button></div>
+    <footer>VELORA MARKET. Herní obchod pro roleplay, ukázka. Data jsou zatím uložená jen v prohlížeči.</footer>
+
+    <script src="main.js">
+    </script>
 </body>
 
 </html>
