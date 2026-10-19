@@ -26,6 +26,13 @@ var CATS = ['Občerstvení', 'Potraviny', 'Elektronika', 'Oblečení', 'Domácno
 var CICON = { 'Občerstvení': 'cup', 'Potraviny': 'basket', 'Elektronika': 'cpu', 'Oblečení': 'bag', 'Domácnost': 'house' };
 var state = { user: null, cart: {}, orders: [], collabs: [], filter: 'Vše' };
 var $ = function (s) { return document.querySelector(s) };
+function clearSession() {
+    TOKEN = '';
+    state.user = null;
+    try { sessionStorage.removeItem('vtok') } catch (e) { }
+    save();
+    renderAuth();
+}
 function ic(n) { return '<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-' + n + '"/></svg>' }
 function usd(n) { return '$' + n.toLocaleString('en-US') }
 function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] }) }
@@ -63,6 +70,10 @@ function api(path, options) {
     return fetch(CFG.API + path, options).then(function (r) {
         if (r.status === 204) return null;
         return r.json().catch(function () { return {}; }).then(function (body) {
+            if (r.status === 401) {
+                clearSession();
+                throw new Error(body.error || 'Přihlášení vypršelo');
+            }
             if (!r.ok) throw new Error(body.error || ('API ' + r.status));
             return body;
         });
@@ -80,7 +91,11 @@ function loadAdminData() {
         if (document.querySelector('.view.on').id === 'dash') renderDash();
         if (document.querySelector('.view.on').id === 'orders') renderOrders();
         if (document.querySelector('.view.on').id === 'inbox') renderInbox();
-    }).catch(function () { toast('Admin data se nepodařilo načíst ze serveru') });
+    }).catch(function (error) {
+        toast(error.message === 'Nepřihlášený uživatel' || error.message.indexOf('Discord token') > -1 || error.message.indexOf('Přihlášení') > -1
+            ? 'Přihlášení vypršelo. Přihlas se přes Discord znovu.'
+            : 'Admin data se nepodařilo načíst ze serveru');
+    });
 }
 function loadUserData() {
     if (!state.user || !CFG.API) return;
@@ -108,7 +123,7 @@ function go(v) {
 document.addEventListener('click', function (e) {
     var t = e.target;
     if (t.closest('[data-login]')) { login(); return }
-    if (t.closest('[data-logout]')) { state.user = null; save(); renderAuth(); go('home'); toast('Odhlášen'); return }
+    if (t.closest('[data-logout]')) { clearSession(); go('home'); toast('Odhlášen'); return }
     var g = t.closest('[data-go]'); if (g) { go(g.dataset.go); return }
     var a = t.closest('[data-add]'); if (a) { addCart(+a.dataset.add); return }
     var c = t.closest('[data-cat]'); if (c) { state.filter = c.dataset.cat; renderShop(); go('shop'); return }
@@ -268,6 +283,7 @@ function renderAuth() {
     $('#auth').innerHTML = u ? '<button class="prof" data-go="profile" aria-label="Můj profil"><span class="av">' + esc(u.name[0]) + '</span>' + esc(u.name) + '<span class="role' + (isAdmin() ? ' a' : '') + '">' + (isAdmin() ? 'Admin' : 'Visitor') + '</span></button>' : '<button class="btn solid" data-login>Přihlásit přes Discord</button>';
 }
 load();
+if (!TOKEN && state.user) clearSession();
 function renderTicker() { var T = ['Nejlepší dostupný obchod ve městě', 'Nejlepší ceny na trhu', 'Všechno na jednom místě', 'Čerstvé zboží každý den', 'Elektronika, občerstvení i oblečení', 'Objednej a my se ozveme']; var g = T.map(function (t) { return '<span>' + t + '</span>' }).join(''); $('#tick').innerHTML = g + g + g + g }
 renderTicker(); renderAuth(); renderHome(); renderShop(); renderCart(); updateContactFields();
 $('#q').oninput = renderShop; $('#sort').onchange = renderShop;
