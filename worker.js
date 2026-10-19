@@ -24,6 +24,52 @@ class ApiError extends Error {
   }
 }
 
+async function ensureSessions(env) {
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS auth_sessions (id TEXT PRIMARY KEY, discord_id TEXT NOT NULL, name TEXT NOT NULL, admin INTEGER NOT NULL DEFAULT 0, access_token TEXT NOT NULL, refresh_token TEXT NOT NULL, expires_at INTEGER NOT NULL, created_at INTEGER NOT NULL DEFAULT (unixepoch()))").run();
+}
+
+async function createSession(env, code, redirectUri) {
+  if (!env.DISCORD_CLIENT_SECRET) throw new ApiError("DISCORD_CLIENT_SECRET není nastavený", 500);
+  const response = await fetch("https://discord.com/api/oauth2/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ client_id: env.CLIENT_ID, client_secret: env.DISCORD_CLIENT_SECRET, grant_type: "authorization_code", code, redirect_uri: redirectUri })
+  });
+  if (!response.ok) throw new ApiError("Discord OAuth přihlášení selhalo", 401);
+  const tokens = await response.json();
+  const userResponse = await fetch("https://discord.com/api/users/@me", {
+    headers: { Authorization: "Bearer " + tokens.access_token }
+  });
+  if (!userResponse.ok) throw new ApiError("Discord uživatele se nepodařilo načíst", 401);
+  const user = await userResponse.json();
+  const memberResponse = await fetch("https://discord.com/api/users/@me/guilds/" + env.GUILD_ID + "/member", {
+    headers: { Authorization: "Bearer " + tokens.access_token }
+  });
+  if (!memberResponse.ok) throw new ApiError("Uživatel není na Discord serveru", 401);
+  const member = await memberResponse.json();
+  const id = crypto.randomUUID();
+  const name = member.nick || user.global_name || user.username;
+  const admin = Array.isArray(member.roles) && member.roles.includes(env.ADMIN_ROLE_ID) ? 1 : 0;
+  await env.DB.prepare("INSERT INTO auth_sessions (id, discord_id, name, admin, access_token, refresh_token, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)")
+    .bind(id, user.id, name, admin, tokens.access_token, tokens.refresh_token, Math.floor(Date.now() / 1000) + tokens.expires_in).run();
+  return { id, name, admin: Boolean(admin) };
+}
+
+async function refreshSession(env, session) {
+  if (session.expires_at > Math.floor(Date.now() / 1000) + 60) return session;
+  const response = await fetch("https://discord.com/api/oauth2/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ client_id: env.CLIENT_ID, client_secret: env.DISCORD_CLIENT_SECRET, grant_type: "refresh_token", refresh_token: session.refresh_token })
+  });
+  if (!response.ok) throw new ApiError("Přihlášení vypršelo. Přihlas se přes Discord znovu.", 401);
+  const tokens = await response.json();
+  const expiresAt = Math.floor(Date.now() / 1000) + tokens.expires_in;
+  await env.DB.prepare("UPDATE auth_sessions SET access_token = ?, refresh_token = ?, expires_at = ? WHERE id = ?")
+    .bind(tokens.access_token, tokens.refresh_token || session.refresh_token, expiresAt, session.id).run();
+  return Object.assign({}, session, { access_token: tokens.access_token, refresh_token: tokens.refresh_token || session.refresh_token, expires_at: expiresAt });
+}
+
 async function discordMember(request, env, withRoles) {
   const auth = request.headers.get("Authorization") || "";
   if (!auth.startsWith("Bearer ")) throw new ApiError("Nepřihlášený uživatel", 401);
