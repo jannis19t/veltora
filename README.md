@@ -17,7 +17,7 @@ Projekt obsahuje [worker.js](./worker.js), [wrangler.toml](./wrangler.toml) a [s
 1. V Cloudflare vytvoř databázi D1 s názvem `velora`.
 2. Vlož do `wrangler.toml` její skutečné `database_id` místo `DOPLNIT_PO_VYTVORENI_D1`.
 3. Spusť nad databází obsah `schema.sql`.
-4. V Cloudflare Workeru nastav secrets `ORDERS_WEBHOOK_URL`, `REQUESTS_WEBHOOK_URL` a `COMPLAINTS_WEBHOOK_URL`. Webhook URL se neposílají do frontendu ani do chatu.
+4. Discord webhooky jsou momentálně vypnuté. Objednávky a žádosti se ukládají pouze do D1 databáze.
 5. Po deployi bude web na `https://veltora.krixxfn.workers.dev/` a API na `https://veltora.krixxfn.workers.dev/api`.
 
 `GUILD_ID` a `ADMIN_ROLE_ID` jsou nastavené jako veřejné Worker variables. API ověřuje každý požadavek přes Discord OAuth token a admin endpointy kontrolují admin roli.

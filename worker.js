@@ -52,25 +52,6 @@ function product(row) {
   return { id: row.id, n: row.name, c: row.category, p: row.price };
 }
 
-async function notifyDiscord(env, type, data, requestUrl) {
-  const webhookUrl = type === "order"
-    ? env.ORDERS_WEBHOOK_URL
-    : data.type === "Stížnost" ? env.COMPLAINTS_WEBHOOK_URL : env.REQUESTS_WEBHOOK_URL;
-  if (!webhookUrl) throw new Error("Discord webhook není nastavený");
-  const siteUrl = env.PUBLIC_URL || new URL(requestUrl).origin;
-  const content = type === "order"
-    ? `📦 **Přišla nová objednávka ${data.id}**\n\nOtevřít administraci: ${siteUrl}`
-    : data.type === "Stížnost"
-      ? `⚠️ **Nová stížnost ${data.id}**\nJméno: ${data.name}\nČíslo objednávky: ${data.phone}\nPopis: ${data.msg}\n\nOtevřít administraci: ${siteUrl}`
-      : `🤝 **Nová žádost o spolupráci**\nJméno: ${data.name}\nTyp: ${data.type}\nKontakt: ${data.phone}\n\nOtevřít administraci: ${siteUrl}`;
-  const response = await fetch(`${webhookUrl}?wait=true`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ content })
-  });
-  if (!response.ok) throw new Error(`Discord webhook selhal (${response.status})`);
-}
-
 async function handleApi(request, env) {
   const url = new URL(request.url);
   const path = url.pathname.replace(/^\/api\/?/, "");
@@ -104,9 +85,7 @@ async function handleApi(request, env) {
     if (!body.id || !body.items || !Number.isFinite(body.total)) return json({ error: "Neplatná objednávka" }, 400);
     await env.DB.prepare("INSERT INTO orders (id, discord_id, customer_name, items, total) VALUES (?, ?, ?, ?, ?)")
       .bind(body.id, user.id, user.name, body.items, body.total).run();
-    let discordNotified = true;
-    try { await notifyDiscord(env, "order", { ...body, by: user.name }, request.url); } catch (_) { discordNotified = false; }
-    return json({ ok: true, discordNotified }, 201);
+    return json({ ok: true }, 201);
   }
 
   if (request.method === "GET" && path === "orders") {
@@ -147,9 +126,7 @@ async function handleApi(request, env) {
     if (!body.name || !body.type || !body.phone || !body.msg) return json({ error: "Neplatná žádost" }, 400);
     await env.DB.prepare("INSERT INTO collaboration_requests (id, discord_id, name, type, phone, message) VALUES (?, ?, ?, ?, ?, ?)")
       .bind(body.id, user.id, body.name, body.type, body.phone, body.msg).run();
-    let discordNotified = true;
-    try { await notifyDiscord(env, "request", body, request.url); } catch (_) { discordNotified = false; }
-    return json({ ok: true, discordNotified }, 201);
+    return json({ ok: true }, 201);
   }
 
   return json({ error: "Endpoint nenalezen" }, 404);

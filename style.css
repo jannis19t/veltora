@@ -453,34 +453,40 @@ h2 {
     line-height: 1.35
 }
 
-.meta-badge.category-obcerstveni {
-    color: #ffd166;
-    border-color: rgba(255, 209, 102, .4);
-    background: rgba(255, 209, 102, .12)
-}
-
-.meta-badge.category-potraviny {
+.meta-badge.category-jidlo {
     color: #7ee787;
     border-color: rgba(126, 231, 135, .4);
     background: rgba(126, 231, 135, .12)
 }
 
-.meta-badge.category-elektronika {
+.meta-badge.category-napoje {
     color: #79c7ff;
     border-color: rgba(121, 199, 255, .4);
     background: rgba(121, 199, 255, .12)
 }
 
-.meta-badge.category-obleceni {
+.meta-badge.category-ovoce {
+    color: #ff9f7a;
+    border-color: rgba(255, 159, 122, .4);
+    background: rgba(255, 159, 122, .12)
+}
+
+.meta-badge.category-obcerstvene {
+    color: #ffd166;
+    border-color: rgba(255, 209, 102, .4);
+    background: rgba(255, 209, 102, .12)
+}
+
+.meta-badge.category-alkohol {
     color: #d6a8ff;
     border-color: rgba(214, 168, 255, .4);
     background: rgba(214, 168, 255, .12)
 }
 
-.meta-badge.category-domacnost {
-    color: #ff9f7a;
-    border-color: rgba(255, 159, 122, .4);
-    background: rgba(255, 159, 122, .12)
+.meta-badge.category-ostatni {
+    color: #ff8bc7;
+    border-color: rgba(255, 139, 199, .4);
+    background: rgba(255, 139, 199, .12)
 }
 
 .meta-badge.price {

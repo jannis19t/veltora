@@ -6,24 +6,25 @@ var PUBLIC_API = 'https://veltora.krixxfn.workers.dev/api';
 var CFG = { CLIENT_ID: '1561807208897978388', GUILD_ID: '1559887838059962481', ADMIN_ROLE_ID: '1561691507382034502', API: location.protocol === 'file:' ? PUBLIC_API : location.origin + '/api', REDIRECT: location.protocol === 'file:' ? 'https://veltora.krixxfn.workers.dev/' : location.origin + location.pathname };
 var TOKEN = ''; try { TOKEN = sessionStorage.getItem('vtok') || '' } catch (e) { }
 var PRODUCTS = [
-    { id: 1, n: 'Čokoládová tyčinka', c: 'Občerstvení', p: 3 },
-    { id: 2, n: 'Brambůrky solené', c: 'Občerstvení', p: 4 },
-    { id: 3, n: 'Energy drink 0,5 l', c: 'Občerstvení', p: 5 },
-    { id: 4, n: 'Proteinová tyčinka', c: 'Občerstvení', p: 6 },
-    { id: 5, n: 'Chléb pšenično-žitný', c: 'Potraviny', p: 4 },
-    { id: 6, n: 'Mléko 1 l', c: 'Potraviny', p: 3 },
-    { id: 7, n: 'Těstoviny 500 g', c: 'Potraviny', p: 4 },
-    { id: 8, n: 'Rajčata 1 kg', c: 'Potraviny', p: 5 },
-    { id: 9, n: 'Bezdrátová sluchátka', c: 'Elektronika', p: 129 },
-    { id: 10, n: 'Powerbanka', c: 'Elektronika', p: 59 },
-    { id: 11, n: 'Herní gamepad', c: 'Elektronika', p: 79 },
-    { id: 12, n: 'Nabíječka USB-C', c: 'Elektronika', p: 39 },
-    { id: 13, n: 'Černá mikina', c: 'Oblečení', p: 89 },
-    { id: 14, n: 'Bílé tenisky', c: 'Oblečení', p: 119 },
-    { id: 15, n: 'Toaletní papír 8 ks', c: 'Domácnost', p: 8 },
-    { id: 16, n: 'Batoh městský', c: 'Domácnost', p: 69 }];
-var CATS = ['Občerstvení', 'Potraviny', 'Elektronika', 'Oblečení', 'Domácnost'];
-var CICON = { 'Občerstvení': 'cup', 'Potraviny': 'basket', 'Elektronika': 'cpu', 'Oblečení': 'bag', 'Domácnost': 'house' };
+    { id: 1, n: 'Čokoládová tyčinka', c: 'Občerstvené', p: 3 },
+    { id: 2, n: 'Brambůrky solené', c: 'Občerstvené', p: 4 },
+    { id: 3, n: 'Energy drink 0,5 l', c: 'Nápoje', p: 5 },
+    { id: 4, n: 'Proteinová tyčinka', c: 'Občerstvené', p: 6 },
+    { id: 5, n: 'Chléb pšenično-žitný', c: 'Jídlo', p: 4 },
+    { id: 6, n: 'Mléko 1 l', c: 'Nápoje', p: 3 },
+    { id: 7, n: 'Těstoviny 500 g', c: 'Jídlo', p: 4 },
+    { id: 8, n: 'Rajčata 1 kg', c: 'Ovoce', p: 5 },
+    { id: 9, n: 'Bezdrátová sluchátka', c: 'Ostatní', p: 129 },
+    { id: 10, n: 'Powerbanka', c: 'Ostatní', p: 59 },
+    { id: 11, n: 'Herní gamepad', c: 'Ostatní', p: 79 },
+    { id: 12, n: 'Nabíječka USB-C', c: 'Ostatní', p: 39 },
+    { id: 13, n: 'Černá mikina', c: 'Ostatní', p: 89 },
+    { id: 14, n: 'Bílé tenisky', c: 'Ostatní', p: 119 },
+    { id: 15, n: 'Toaletní papír 8 ks', c: 'Ostatní', p: 8 },
+    { id: 16, n: 'Batoh městský', c: 'Ostatní', p: 69 }];
+var CATS = ['Jídlo', 'Nápoje', 'Ovoce', 'Občerstvené', 'Alkohol', 'Ostatní'];
+var CICON = { 'Jídlo': 'basket', 'Nápoje': 'cup', 'Ovoce': 'basket', 'Občerstvené': 'cup', 'Alkohol': 'cup', 'Ostatní': 'bag' };
+var LEGACY_CATEGORIES = { 'Občerstvení': 'Občerstvené', 'Potraviny': 'Jídlo', 'Elektronika': 'Ostatní', 'Oblečení': 'Ostatní', 'Domácnost': 'Ostatní' };
 var state = { user: null, cart: {}, orders: [], collabs: [], filter: 'Vše' };
 var $ = function (s) { return document.querySelector(s) };
 function clearSession() {
@@ -55,9 +56,12 @@ function load() {
             state.user = d.user;
             if (state.user && /^100000000000000/.test(state.user.id)) state.user = null;
             state.orders = d.orders || []; state.collabs = d.collabs || [];
-            if (Array.isArray(d.products)) PRODUCTS = d.products
+            if (Array.isArray(d.products)) PRODUCTS = d.products.map(normalizeProduct)
         }
     } catch (e) { }
+}
+function normalizeProduct(p) {
+    return Object.assign({}, p, { c: LEGACY_CATEGORIES[p.c] || p.c });
 }
 function productById(id) { return PRODUCTS.find(function (p) { return p.id === Number(id) }) }
 function categoryClass(category) {
@@ -81,7 +85,7 @@ function api(path, options) {
 }
 function loadProducts() {
     api('/products').then(function (data) {
-        if (Array.isArray(data)) { PRODUCTS = data; renderHome(); renderShop(); renderCart() }
+        if (Array.isArray(data)) { PRODUCTS = data.map(normalizeProduct); renderHome(); renderShop(); renderCart() }
     }).catch(function () { });
 }
 function loadAdminData() {
@@ -164,7 +168,7 @@ async function order() {
     state.orders.unshift(o);
     var sent = await notify('order', o);
     state.cart = {}; save(); renderCart(); $('#drawer').classList.remove('on');
-    if (sent) toast('Objednávka odeslána a oznámení bylo posláno');
+    if (sent) toast('Objednávka byla uložena');
     go(isAdmin() ? 'orders' : 'profile');
 }
 $('#cartBtn').onclick = function () { $('#drawer').classList.add('on') };
@@ -180,10 +184,9 @@ function tag(s) { var c = s === 'Nová' ? 'nova' : (s === 'Hotovo' || s === 'Př
 function notify(type, data, successMessage) {
     if (!CFG.API) return Promise.reject(new Error('API není nastaveno'));
     return api('/' + type, { method: 'POST', body: JSON.stringify(data) }).then(function (result) {
-        if (result && result.discordNotified === false) { toast('Objednávka je uložená, ale Discord oznámení se nepodařilo odeslat'); return false }
-        else if (successMessage) toast(successMessage);
+        if (successMessage) toast(successMessage);
         return true;
-    }).catch(function () { toast('Objednávku se nepodařilo odeslat na server'); return false });
+    }).catch(function () { toast('Data se nepodařilo uložit na server'); return false });
 }
 function decide(i, v) {
     var c = state.collabs[i]; if (!c) return; c.status = v; save(); renderInbox(); renderDash();
