@@ -59,38 +59,12 @@ async function notifyDiscord(env, type, data, requestUrl) {
   if (!webhookUrl) throw new Error("Discord webhook není nastavený");
   const siteUrl = env.PUBLIC_URL || new URL(requestUrl).origin;
   const content = type === "order"
-    ? `<@&1561690676725547079>`
+    ? `<@&1561690676725547079>\n\n# 📦 NOVÁ OBJEDNÁVKA\n\n> **Číslo objednávky:** ${data.id}\n> **Obsah:**\n${String(data.items).split(", ").map((item) => `> • ${item}`).join("\n")}\n> **Cena:** $${data.total}\n> **Komu:** ${data.by}\n> **Stav:** ${data.status || "Nová"}\n\n> 🔗 **Otevřít a změnit stav:** ${siteUrl}?view=orders&order=${encodeURIComponent(data.id)}`
     : data.type === "Stížnost"
       ? `⚠️ **Nová stížnost ${data.id}**\nJméno: ${data.name}\nČíslo objednávky: ${data.phone}\nPopis: ${data.msg}\n\nOtevřít administraci: ${siteUrl}`
       : `🤝 **Nová žádost o spolupráci**\nJméno: ${data.name}\nTyp: ${data.type}\nKontakt: ${data.phone}\n\nOtevřít administraci: ${siteUrl}`;
   const payload = type === "order"
-    ? {
-        content,
-        allowed_mentions: { roles: ["1561690676725547079"] },
-        embeds: [{
-          title: "📦 Nová objednávka",
-          description: `Objednávka **${data.id}** byla právě přijata.`,
-          color: 0xFF4DB0,
-          fields: [
-            { name: "Obsah", value: String(data.items).split(", ").map((item) => `• ${item}`).join("\n").slice(0, 1024), inline: false },
-            { name: "Cena", value: `$${data.total}`, inline: true },
-            { name: "Komu", value: String(data.by).slice(0, 1024), inline: true },
-            { name: "Stav", value: data.status || "Nová", inline: true }
-          ],
-          url: `${siteUrl}?view=orders&order=${encodeURIComponent(data.id)}`,
-          footer: { text: "VELORA MARKET · Otevřít objednávku přes tlačítko níže" },
-          timestamp: new Date().toISOString()
-        }],
-        components: [{
-          type: 1,
-          components: [{
-            type: 2,
-            style: 5,
-            label: "Otevřít objednávku",
-            url: `${siteUrl}?view=orders&order=${encodeURIComponent(data.id)}`
-          }]
-        }]
-      }
+    ? { content, allowed_mentions: { roles: ["1561690676725547079"] } }
     : { content };
   const response = await fetch(`${webhookUrl}?wait=true`, {
     method: "POST",
