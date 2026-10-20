@@ -3,7 +3,7 @@
            GUILD_ID = ID vašeho serveru, ADMIN_ROLE_ID = ID role, která dává admina. */
 /* API = adresa vašeho backendu (velora-backend.js), který posílá zprávy do Discord kanálů a soukromé zprávy hráčům. */
 var PUBLIC_API = 'https://veltora.krixxfn.workers.dev/api';
-var CFG = { CLIENT_ID: '1561807208897978388', GUILD_ID: '1559887838059962481', ADMIN_ROLE_ID: '1561691507382034502', API: location.protocol === 'file:' ? PUBLIC_API : location.origin + '/api', REDIRECT: location.protocol === 'file:' ? 'https://veltora.krixxfn.workers.dev/' : location.origin + location.pathname };
+var CFG = { CLIENT_ID: '1561807208897978388', GUILD_ID: '1559887838059962481', ADMIN_ROLE_ID: '1561691507382034502', API: location.protocol === 'file:' ? PUBLIC_API : location.origin + '/api', REDIRECT: location.protocol === 'file:' ? 'https://veltora.krixxfn.workers.dev/' : location.origin + location.pathname + location.search };
 var TOKEN = ''; try { TOKEN = sessionStorage.getItem('vtok') || '' } catch (e) { }
 var PRODUCTS = [
     { id: 1, n: 'Čokoládová tyčinka', c: 'Občerstvení', p: 3 },
@@ -120,6 +120,10 @@ function go(v) {
     $('#menuToggle').setAttribute('aria-expanded', 'false');
     window.scrollTo(0, 0);
 }
+function openRequestedView() {
+    var view = new URLSearchParams(location.search).get('view');
+    if (view === 'orders' && isAdmin()) go('orders');
+}
 document.addEventListener('click', function (e) {
     var t = e.target;
     if (t.closest('[data-login]')) { login(); return }
@@ -183,7 +187,10 @@ function notify(type, data, successMessage) {
         if (result && result.discordNotified === false) { toast('Objednávka je uložená, ale Discord oznámení se nepodařilo odeslat'); return false }
         else if (successMessage) toast(successMessage);
         return true;
-    }).catch(function () { toast('Objednávku se nepodařilo odeslat na server'); return false });
+    }).catch(function (error) {
+        toast('Objednávku se nepodařilo odeslat na server: ' + (error.message || 'neznámá chyba'));
+        return false;
+    });
 }
 function decide(i, v) {
     var c = state.collabs[i]; if (!c) return; c.status = v; save(); renderInbox(); renderDash();
@@ -271,13 +278,13 @@ function login() {
 async function handleReturn() {
     var t = new URLSearchParams(location.hash.slice(1)).get('access_token');
     if (!t) return;
-    history.replaceState(null, '', location.pathname); TOKEN = t; try { sessionStorage.setItem('vtok', t) } catch (e) { }
+    history.replaceState(null, '', location.pathname + location.search); TOKEN = t; try { sessionStorage.setItem('vtok', t) } catch (e) { }
     try {
         var r = await fetch('https://discord.com/api/users/@me/guilds/' + CFG.GUILD_ID + '/member', { headers: { Authorization: 'Bearer ' + t } });
         if (!r.ok) throw 0;
         var m = await r.json();
         state.user = { name: m.nick || m.user.global_name || m.user.username, admin: (m.roles || []).indexOf(CFG.ADMIN_ROLE_ID) > -1, id: m.user.id };
-        save(); renderAuth(); toast('Přihlášen jako ' + (isAdmin() ? 'admin' : 'visitor'));
+        save(); renderAuth(); openRequestedView(); toast('Přihlášen jako ' + (isAdmin() ? 'admin' : 'visitor'));
     } catch (e) { toast('Přihlášení se nepovedlo. Jsi na našem serveru?') }
 }
 function renderAuth() {
@@ -291,3 +298,4 @@ renderTicker(); renderAuth(); renderHome(); renderShop(); renderCart(); updateCo
 $('#q').oninput = renderShop; $('#sort').onchange = renderShop;
 loadProducts();
 handleReturn();
+openRequestedView();
