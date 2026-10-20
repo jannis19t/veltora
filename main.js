@@ -203,14 +203,10 @@ function notify(type, data, successMessage) {
     return api('/' + type, { method: 'POST', body: JSON.stringify(data) }).then(function (result) {
         if (successMessage) toast(successMessage);
         return true;
-<<<<<<< HEAD
-    }).catch(function () { toast('Data se nepodařilo uložit na server'); return false });
-=======
     }).catch(function (error) {
         toast('Objednávku se nepodařilo odeslat na server: ' + (error.message || 'neznámá chyba'));
         return false;
     });
->>>>>>> e2210d8093ee8220d2896b7d747fd95967104f17
 }
 function decide(i, v) {
     var c = state.collabs[i]; if (!c) return; c.status = v; save(); renderInbox(); renderDash();

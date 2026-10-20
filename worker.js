@@ -52,8 +52,6 @@ function product(row) {
   return { id: row.id, n: row.name, c: row.category, p: row.price };
 }
 
-<<<<<<< HEAD
-=======
 async function notifyDiscord(env, type, data, requestUrl) {
   const webhookUrl = type === "order"
     ? env.ORDERS_WEBHOOK_URL
@@ -76,7 +74,6 @@ async function notifyDiscord(env, type, data, requestUrl) {
   if (!response.ok) throw new Error(`Discord webhook selhal (${response.status})`);
 }
 
->>>>>>> e2210d8093ee8220d2896b7d747fd95967104f17
 async function handleApi(request, env) {
   const url = new URL(request.url);
   const path = url.pathname.replace(/^\/api\/?/, "");
