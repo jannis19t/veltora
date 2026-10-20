@@ -54,6 +54,7 @@ function load() {
         if (d) {
             state.user = d.user;
             if (state.user && /^100000000000000/.test(state.user.id)) state.user = null;
+            if (state.user && !TOKEN) state.user = null;
             state.orders = d.orders || []; state.collabs = d.collabs || [];
             if (Array.isArray(d.products)) PRODUCTS = d.products
         }
@@ -86,27 +87,39 @@ function loadProducts() {
 }
 function loadAdminData() {
     if (!isAdmin() || !CFG.API) return;
-    Promise.all([api('/orders'), api('/requests')]).then(function (data) {
-        state.orders = data[0] || []; state.collabs = data[1] || [];
-        if (document.querySelector('.view.on').id === 'dash') renderDash();
+    api('/orders').then(function (orders) {
+        state.orders = orders || [];
+        if (document.querySelector('.view.on').id === 'dash' || document.querySelector('.view.on').id === 'orders') renderDash();
         if (document.querySelector('.view.on').id === 'orders') renderOrders();
+    }).catch(function (error) {
+        handleDataLoadError(error, 'Objednávky se nepodařilo načíst');
+    });
+    api('/requests').then(function (requests) {
+        state.collabs = requests || [];
+        if (document.querySelector('.view.on').id === 'dash' || document.querySelector('.view.on').id === 'inbox') renderDash();
         if (document.querySelector('.view.on').id === 'inbox') renderInbox();
     }).catch(function (error) {
-        toast(error.message === 'Nepřihlášený uživatel' || error.message.indexOf('Discord token') > -1 || error.message.indexOf('Přihlášení') > -1
-            ? 'Přihlášení vypršelo. Přihlas se přes Discord znovu.'
-            : 'Admin data se nepodařilo načíst ze serveru');
+        handleDataLoadError(error, 'Žádosti se nepodařilo načíst');
     });
+}
+function handleDataLoadError(error, fallback) {
+    var message = error && error.message ? error.message : '';
+    if (message === 'Nepřihlášený uživatel' || message.indexOf('Discord token') > -1 || message.indexOf('Přihlášení') > -1) {
+        toast('Přihlášení vypršelo. Přihlas se přes Discord znovu.');
+        return;
+    }
+    toast(fallback + ': ' + (message || 'neznámá chyba'));
 }
 function loadUserData() {
     if (!state.user || !CFG.API) return;
     api('/orders').then(function (orders) {
         state.orders = orders || [];
         if (document.querySelector('.view.on').id === 'profile') renderProfile();
-    }).catch(function (error) { toast(error.message === 'Nepřihlášený uživatel' || error.message.indexOf('Discord token') > -1 ? 'Přihlášení vypršelo. Přihlas se přes Discord znovu.' : 'Objednávky se nepodařilo načíst') });
+    }).catch(function (error) { handleDataLoadError(error, 'Objednávky se nepodařilo načíst') });
     api('/requests').then(function (requests) {
         state.collabs = requests || [];
         if (document.querySelector('.view.on').id === 'profile') renderProfile();
-    }).catch(function (error) { toast(error.message === 'Nepřihlášený uživatel' || error.message.indexOf('Discord token') > -1 ? 'Přihlášení vypršelo. Přihlas se přes Discord znovu.' : 'Žádosti se nepodařilo načíst') });
+    }).catch(function (error) { handleDataLoadError(error, 'Žádosti se nepodařilo načíst') });
 }
 
 function go(v) {
