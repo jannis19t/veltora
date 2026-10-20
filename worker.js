@@ -52,6 +52,31 @@ function product(row) {
   return { id: row.id, n: row.name, c: row.category, p: row.price };
 }
 
+<<<<<<< HEAD
+=======
+async function notifyDiscord(env, type, data, requestUrl) {
+  const webhookUrl = type === "order"
+    ? env.ORDERS_WEBHOOK_URL
+    : data.type === "Stížnost" ? env.COMPLAINTS_WEBHOOK_URL : env.REQUESTS_WEBHOOK_URL;
+  if (!webhookUrl) throw new Error("Discord webhook není nastavený");
+  const siteUrl = env.PUBLIC_URL || new URL(requestUrl).origin;
+  const content = type === "order"
+    ? `<@&1561690676725547079>\n\n# 📦 NOVÁ OBJEDNÁVKA\n\n> **Číslo objednávky:** ${data.id}\n> **Obsah:**\n${String(data.items).split(", ").map((item) => `> • ${item}`).join("\n")}\n> **Cena:** $${data.total}\n> **Komu:** ${data.by}\n> **Stav:** ${data.status || "Nová"}\n\n> 🔗 **Otevřít a změnit stav:** ${siteUrl}?view=orders&order=${encodeURIComponent(data.id)}`
+    : data.type === "Stížnost"
+      ? `⚠️ **Nová stížnost ${data.id}**\nJméno: ${data.name}\nČíslo objednávky: ${data.phone}\nPopis: ${data.msg}\n\nOtevřít administraci: ${siteUrl}`
+      : `🤝 **Nová žádost o spolupráci**\nJméno: ${data.name}\nTyp: ${data.type}\nKontakt: ${data.phone}\n\nOtevřít administraci: ${siteUrl}`;
+  const payload = type === "order"
+    ? { content, allowed_mentions: { roles: ["1561690676725547079"] } }
+    : { content };
+  const response = await fetch(`${webhookUrl}?wait=true`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  if (!response.ok) throw new Error(`Discord webhook selhal (${response.status})`);
+}
+
+>>>>>>> e2210d8093ee8220d2896b7d747fd95967104f17
 async function handleApi(request, env) {
   const url = new URL(request.url);
   const path = url.pathname.replace(/^\/api\/?/, "");

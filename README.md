@@ -43,6 +43,12 @@ Client Secret ani bot token pro tuto verzi nejsou potřeba.
 
 Webhooky nevyžadují Discord bota ani jeho online stav. Pokud se objednávka uloží, ale zpráva nepřijde, zkontroluj příslušný webhook secret a Cloudflare Worker Logs.
 
+Po odeslání objednávky přijde do `ORDERS_WEBHOOK_URL` zpráva s číslem, obsahem,
+cenou, zákazníkem a aktuálním stavem objednávky. Odkaz ve zprávě otevře přímo
+sekci **Objednávky** na webu, kde admin může stav přepnout na **V procesu**
+nebo **Hotovo**. Odkaz používá hodnotu `PUBLIC_URL`, proto ji nastav na adresu,
+ze které se má administrace otevírat.
+
 Webhook vytvoř v každém cílovém Discord kanálu přes **Edit Channel → Integrations → Webhooks → New Webhook**. URL potom nastav v Cloudflare:
 
 ```bash
